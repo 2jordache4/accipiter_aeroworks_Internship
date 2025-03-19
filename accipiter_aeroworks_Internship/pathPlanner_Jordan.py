@@ -8,9 +8,10 @@ from matplotlib.animation import FFMpegWriter
 # from mpl_toolkits.basemap import Basemap, shiftgrid
 import sys
 import random
-# just gonna test
 
 import datetime
+
+# testing the thing again
 
 class CaliforniaHawaii():
     name = "CA-to-HI"
