@@ -40,7 +40,7 @@ class PathPlanner_2D:
     # {0: (x,y)} or maybe {0: {x:num, y: num}}
     # I think the latter might be the better option
 
-  def generate_grid(self, start_lat, start_lon, end_lat, end_lon, spacing_km=100):
+  def generate_grid(self, start_lat, start_lon, end_lat, end_lon, spacing_km=1000):
     """
     Generates a grid from a starting lat/lon to an ending lat/lon with a given spacing (in km).
     I use 2.2km because that is what "sailing the virtual Bol D'or " has
@@ -109,13 +109,35 @@ class PathPlanner_2D:
         file.write(str(value.get("y")))
         file.write(" \n")
 
-  def find_path(self, start, end):
+  def find_path(self,node, memo = {}):
     """
     Start: will be a set of coordinates (first two indicies of the hawaii-cali class)
     End: will be a set of coordinates (^)
     """
+    if tuple(node) == self.end:
+      return 0
 
-                        
+    if tuple(node) in memo:
+       return memo[tuple(node)]
+    
+    min_cost = float('inf')
+    
+    for neighbor in self.graph.get(node, []):
+        cost = greatCircleDistance_km(node, neighbor) 
+        min_cost = min(min_cost, cost + self.find_path(tuple(neighbor), memo))
+
+    memo[tuple(node)] = min_cost 
+    return min_cost
+  
+  def reconstruct_path(self, node, memo={}):
+    path = [node]
+    while tuple(node) != self.end:
+        next_node = min(self.graph[tuple(node)], key=lambda n: greatCircleDistance_km(node, n) + memo.get(tuple(n), float('inf')))
+        path.append(next_node)
+        node = next_node
+    return path
+
+ 
   def visualize_grid(self, grid, start, end):
     """
     Visualizes the generated grid.
@@ -141,7 +163,12 @@ class PathPlanner_2D:
             plt.plot([lon1, lon2], [lat1, lat2], 'k-', linewidth=0.5)  # Thin black lines
             # print(count)
             # count += 1 # debugger stuff
-    
+
+    memo = {}
+
+    self.find_path(self.start,memo)
+    self.reconstruct_path(self.start,memo)
+
     plt.xlabel('Longitude')
     plt.ylabel('Latitude')
     plt.title('Graph Representation of the Grid')
@@ -180,11 +207,11 @@ def greatCircleDistance_km(pnt1, pnt2):
         
 
 
-# start_point = (37.155236, -122.359845)  # CA
-# end_point = (20.696066, -155.915948)  # HI
+start_point = (37.155236, -122.359845)  # CA
+end_point = (20.696066, -155.915948)  # HI
 
-start_point = (39.5, -119.8)  # reno
-end_point = (25.2, 55.2)  # dubai
+# start_point = (39.5, -119.8)  # reno
+# end_point = (25.2, 55.2)  # dubai
 
 pathplanner = PathPlanner_2D(start_point, end_point)
 grid_points = pathplanner.generate_grid(*start_point, *end_point)
