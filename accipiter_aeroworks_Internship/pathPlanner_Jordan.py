@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from matplotlib.animation import FFMpegWriter
+from math import inf
 # import geopandas as gpd
 # from mpl_toolkits.basemap import Basemap, shiftgrid
 import sys
@@ -29,7 +30,7 @@ class RenoDubai():
 
 class PathPlanner_2D:
   def __init__(self, start, end):
-    self.path = {} # I think I will just make this the best path
+    self.path = [] # I think I will just make this the best path
     self.start = start
     self.end = end
     self.graph = {}
@@ -40,7 +41,7 @@ class PathPlanner_2D:
     # {0: (x,y)} or maybe {0: {x:num, y: num}}
     # I think the latter might be the better option
 
-  def generate_grid(self, start_lat, start_lon, end_lat, end_lon, spacing_km=1000):
+  def generate_grid(self, start_lat, start_lon, end_lat, end_lon, spacing_km=200):
     """
     Generates a grid from a starting lat/lon to an ending lat/lon with a given spacing (in km).
     I use 2.2km because that is what "sailing the virtual Bol D'or " has
@@ -109,33 +110,36 @@ class PathPlanner_2D:
         file.write(str(value.get("y")))
         file.write(" \n")
 
-  def find_path(self,node, memo = {}):
+  def find_path(self,node,memo = {}):
     """
     Start: will be a set of coordinates (first two indicies of the hawaii-cali class)
     End: will be a set of coordinates (^)
+    I feel like we should start at the end and work backwords which is not what
+    I am currently doing
     """
-    if tuple(node) == self.end:
-      return 0
-
-    if tuple(node) in memo:
-       return memo[tuple(node)]
+    # if tuple(node) in memo:
+    #   return memo[tuple(node)]
     
-    min_cost = float('inf')
+    # min_cost = inf
+    # total_cost = 0
+    # best_neighbor = node
     
-    for neighbor in self.graph.get(node, []):
-        cost = greatCircleDistance_km(node, neighbor) 
-        min_cost = min(min_cost, cost + self.find_path(tuple(neighbor), memo))
+    # for neighbor in self.graph.get(node, []):
+    #   cost = greatCircleDistance_km(neighbor, self.end) # since we're starting at the
+    #   # beginning we can just grab the start neighbors
+    #   if (min_cost > cost):
+    #      min_cost = cost
+    #      best_neighbor = neighbor
+    #   # min_cost = min(min_cost, cost + self.find_path(tuple(neighbor), memo))
 
-    memo[tuple(node)] = min_cost 
-    return min_cost
+    # total_cost = min_cost + total_cost
+    # self.path.append(tuple(best_neighbor))
+
+    # memo[tuple(node)] = min_cost 
+    # self.find_path(tuple(best_neighbor),memo)
+    # return min_cost
+    # greedy approach ^
   
-  def reconstruct_path(self, node, memo={}):
-    path = [node]
-    while tuple(node) != self.end:
-        next_node = min(self.graph[tuple(node)], key=lambda n: greatCircleDistance_km(node, n) + memo.get(tuple(n), float('inf')))
-        path.append(next_node)
-        node = next_node
-    return path
 
  
   def visualize_grid(self, grid, start, end):
@@ -149,25 +153,27 @@ class PathPlanner_2D:
     self.generate_graph(grid)
 
     # this is to plot the nodes but it looks kinda clunky
-    # for row in grid:
-    #     for lat, lon in row:
-    #         plt.scatter(lon, lat, c='blue', marker='.', s=10)
+    for row in grid:
+        for lat, lon in row:
+            plt.scatter(lon, lat, c='blue', marker='.', s=10)
 
     plt.scatter(start[1], start[0], c='green', marker='o', s=100, label='Start Point', edgecolors='black', linewidth=1.2)
     plt.scatter(end[1], end[0], c='red', marker='o', s=100, label='End Point', edgecolors='black', linewidth=1.2)
-    # Plot edges between nodes
+    # plot edges between nodes
     for node, neighbors in self.graph.items():
         lat1, lon1 = node
         for neighbor in neighbors:
             lat2, lon2 = neighbor
-            plt.plot([lon1, lon2], [lat1, lat2], 'k-', linewidth=0.5)  # Thin black lines
+            plt.plot([lon1, lon2], [lat1, lat2], 'k-', linewidth=0.5)
             # print(count)
             # count += 1 # debugger stuff
 
     memo = {}
-
+    self.path.append(self.start)
     self.find_path(self.start,memo)
-    self.reconstruct_path(self.start,memo)
+    y_path,x_path = zip(*self.path)
+    plt.plot(x_path, y_path, marker='o', color='green', linestyle='-', linewidth=2, markersize=6)
+    # self.reconstruct_path(self.start,memo)
 
     plt.xlabel('Longitude')
     plt.ylabel('Latitude')
@@ -199,12 +205,6 @@ def greatCircleDistance_km(pnt1, pnt2):
     length_km = earthRadius_km * deltaSigma_rad
     
     return length_km
-
-
-
-
-
-        
 
 
 start_point = (37.155236, -122.359845)  # CA
