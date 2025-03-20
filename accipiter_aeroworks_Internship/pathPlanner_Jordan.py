@@ -42,7 +42,7 @@ class PathPlanner_2D:
     # {0: (x,y)} or maybe {0: {x:num, y: num}}
     # I think the latter might be the better option
 
-  def generate_grid(self, start_lat, start_lon, end_lat, end_lon, spacing_km=900):
+  def generate_grid(self, start_lat, start_lon, end_lat, end_lon, spacing_km=200):
     """
     Generates a grid from a starting lat/lon to an ending lat/lon with a given spacing (in km).
     I use 2.2km because that is what "sailing the virtual Bol D'or " has
@@ -140,22 +140,46 @@ class PathPlanner_2D:
     # self.find_path(tuple(best_neighbor),memo)
     # return min_cost
     # greedy approach ^
+
+    global path_index
     
     if tuple(node) in memo:
+      # maybe add a insert into path here
+      for i in range(len(self.path)):
+        try:
+          self.path[path_index][tuple(node)] = self.path[i][tuple(node)]
+          path_index = path_index + 1
+          self.path[path_index] = {self.end: 0}
+          break
+        except:
+           None
       return memo[tuple(node)] #not sure if i need this condition anymore
     # but i am leaving it in just in case
     
     if tuple(node) == self.end:
-       return 0
+      if (path_index in self.path):
+        path_index = path_index+1
+        self.path[path_index] = {self.end:0}
+      else:
+        self.path[path_index] = {self.end:0}
+      return 0
     
     for neighbor in self.graph.get(node,[]):
       cost = self.find_path(tuple(neighbor))
       if (cost is not None): # found a path for current scope
         cost = cost + greatCircleDistance_km(node, neighbor)
         memo[tuple(node)] = cost
+        self.path[path_index][tuple(node)] = cost
       if (tuple(neighbor) in memo): # path exists in global
         cost = memo[tuple(neighbor)] + greatCircleDistance_km(node,neighbor) 
         memo[tuple(node)] = cost
+        self.path[path_index][tuple(node)] = cost
+        if tuple(node) == self.start:
+           path_index = path_index + 1
+           self.path[path_index] = {self.end : 0}
+        # if tuple(node) == self.start:
+        #    path_index += 1
+        #    self.path[path_index] = {self.end:0}
 
   def reconstruct_paths(self):
      pass
@@ -204,13 +228,14 @@ class PathPlanner_2D:
 
     # self.path.append(self.start)
     self.find_path(self.start)
-    y_path,x_path = zip(*self.path)
-    plt.plot(x_path, y_path, marker='o', color='green', linestyle='-', linewidth=2, markersize=6)
+    for i in range(len(self.path)):
+      y_path,x_path = zip(*self.path[i])
+      plt.plot(x_path, y_path, marker='o', color='green', linestyle='-', linewidth=2, markersize=6)
     # self.reconstruct_path(self.start,memo)
 
     plt.xlabel('Longitude')
     plt.ylabel('Latitude')
-    plt.title('Graph Representation of the Grid')
+    plt.title('Graph paths')
     plt.grid(True)
     plt.show()
 
@@ -246,6 +271,7 @@ end_point = (20.696066, -155.915948)  # HI
 # start_point = (39.5, -119.8)  # reno
 # end_point = (25.2, 55.2)  # dubai
 memo = {}
+path_index = 0
 pathplanner = PathPlanner_2D(start_point, end_point)
 grid_points = pathplanner.generate_grid(*start_point, *end_point)
 pathplanner.visualize_grid(grid_points, start_point, end_point)
