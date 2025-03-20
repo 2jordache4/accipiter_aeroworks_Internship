@@ -118,28 +118,6 @@ class PathPlanner_2D:
     I feel like we should start at the end and work backwords which is not what
     I am currently doing
     """
-    # if tuple(node) in memo:
-    #   return memo[tuple(node)]
-    
-    # min_cost = inf
-    # total_cost = 0
-    # best_neighbor = node
-    
-    # for neighbor in self.graph.get(node, []):
-    #   cost = greatCircleDistance_km(neighbor, self.end) # since we're starting at the
-    #   # beginning we can just grab the start neighbors
-    #   if (min_cost > cost):
-    #      min_cost = cost
-    #      best_neighbor = neighbor
-    #   # min_cost = min(min_cost, cost + self.find_path(tuple(neighbor), memo))
-
-    # total_cost = min_cost + total_cost
-    # self.path.append(tuple(best_neighbor))
-
-    # memo[tuple(node)] = min_cost 
-    # self.find_path(tuple(best_neighbor),memo)
-    # return min_cost
-    # greedy approach ^
 
     global path_index
     
@@ -177,27 +155,10 @@ class PathPlanner_2D:
         if tuple(node) == self.start:
            path_index = path_index + 1
            self.path[path_index] = {self.end : 0}
-        # if tuple(node) == self.start:
-        #    path_index += 1
-        #    self.path[path_index] = {self.end:0}
 
   def reconstruct_paths(self):
      pass
         
-        
-
-    
-    
-
-    
-       
-    
-
-    
-
-
-
-  
 
  
   def visualize_grid(self, grid, start, end):
