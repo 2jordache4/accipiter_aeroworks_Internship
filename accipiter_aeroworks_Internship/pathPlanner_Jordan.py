@@ -30,7 +30,8 @@ class RenoDubai():
 
 class PathPlanner_2D:
   def __init__(self, start, end):
-    self.path = [] # I think I will just make this the best path
+    self.path = {} # 0: some path // and maybe a step further would be
+    # {0 : {some_path : cost}, 1 : {another_path : cost}} etc
     self.start = start
     self.end = end
     self.graph = {}
@@ -41,7 +42,7 @@ class PathPlanner_2D:
     # {0: (x,y)} or maybe {0: {x:num, y: num}}
     # I think the latter might be the better option
 
-  def generate_grid(self, start_lat, start_lon, end_lat, end_lon, spacing_km=200):
+  def generate_grid(self, start_lat, start_lon, end_lat, end_lon, spacing_km=900):
     """
     Generates a grid from a starting lat/lon to an ending lat/lon with a given spacing (in km).
     I use 2.2km because that is what "sailing the virtual Bol D'or " has
@@ -110,7 +111,7 @@ class PathPlanner_2D:
         file.write(str(value.get("y")))
         file.write(" \n")
 
-  def find_path(self,node,memo = {}):
+  def find_path(self,node):
     """
     Start: will be a set of coordinates (first two indicies of the hawaii-cali class)
     End: will be a set of coordinates (^)
@@ -139,6 +140,39 @@ class PathPlanner_2D:
     # self.find_path(tuple(best_neighbor),memo)
     # return min_cost
     # greedy approach ^
+    
+    if tuple(node) in memo:
+      return memo[tuple(node)] #not sure if i need this condition anymore
+    # but i am leaving it in just in case
+    
+    if tuple(node) == self.end:
+       return 0
+    
+    for neighbor in self.graph.get(node,[]):
+      cost = self.find_path(tuple(neighbor))
+      if (cost is not None): # found a path for current scope
+        cost = cost + greatCircleDistance_km(node, neighbor)
+        memo[tuple(node)] = cost
+      if (tuple(neighbor) in memo): # path exists in global
+        cost = memo[tuple(neighbor)] + greatCircleDistance_km(node,neighbor) 
+        memo[tuple(node)] = cost
+
+  def reconstruct_paths(self):
+     pass
+        
+        
+
+    
+    
+
+    
+       
+    
+
+    
+
+
+
   
 
  
@@ -155,7 +189,7 @@ class PathPlanner_2D:
     # this is to plot the nodes but it looks kinda clunky
     for row in grid:
         for lat, lon in row:
-            plt.scatter(lon, lat, c='blue', marker='.', s=10)
+            plt.scatter(lon, lat, c='blue', marker='.', s=75)
 
     plt.scatter(start[1], start[0], c='green', marker='o', s=100, label='Start Point', edgecolors='black', linewidth=1.2)
     plt.scatter(end[1], end[0], c='red', marker='o', s=100, label='End Point', edgecolors='black', linewidth=1.2)
@@ -168,9 +202,8 @@ class PathPlanner_2D:
             # print(count)
             # count += 1 # debugger stuff
 
-    memo = {}
-    self.path.append(self.start)
-    self.find_path(self.start,memo)
+    # self.path.append(self.start)
+    self.find_path(self.start)
     y_path,x_path = zip(*self.path)
     plt.plot(x_path, y_path, marker='o', color='green', linestyle='-', linewidth=2, markersize=6)
     # self.reconstruct_path(self.start,memo)
@@ -212,7 +245,7 @@ end_point = (20.696066, -155.915948)  # HI
 
 # start_point = (39.5, -119.8)  # reno
 # end_point = (25.2, 55.2)  # dubai
-
+memo = {}
 pathplanner = PathPlanner_2D(start_point, end_point)
 grid_points = pathplanner.generate_grid(*start_point, *end_point)
 pathplanner.visualize_grid(grid_points, start_point, end_point)
