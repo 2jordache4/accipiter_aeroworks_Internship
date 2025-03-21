@@ -30,9 +30,10 @@ class RenoDubai():
 
 class PathPlanner_2D:
   def __init__(self, start, end):
-    self.path = [] # changed this to a list for dijsktra
+    self.dij_path = [] # FOR DIJKSTRA
     # 0: some path // and maybe a step further would be
     # {0 : {some_path : cost}, 1 : {another_path : cost}} etc
+    self.dp_path = {} # FOR DP 
     self.start = start
     self.end = end
     self.graph = {}
@@ -125,11 +126,11 @@ class PathPlanner_2D:
     
     if tuple(node) in memo:
       # maybe add a insert into path here
-      for i in range(len(self.path)):
+      for i in range(len(self.dp_path)):
         try:
-          self.path[path_index][tuple(node)] = self.path[i][tuple(node)]
+          self.dp_path[path_index][tuple(node)] = self.dp_path[i][tuple(node)]
           path_index = path_index + 1
-          self.path[path_index] = {self.end: 0}
+          self.dp_path[path_index] = {self.end: 0}
           break
         except:
            None
@@ -137,11 +138,11 @@ class PathPlanner_2D:
     # but i am leaving it in just in case
     
     if tuple(node) == self.end:
-      if (path_index in self.path):
+      if (path_index in self.dp_path):
         path_index = path_index+1
-        self.path[path_index] = {self.end:0}
+        self.dp_path[path_index] = {self.end:0}
       else:
-        self.path[path_index] = {self.end:0}
+        self.dp_path[path_index] = {self.end:0}
       return 0
     
     for neighbor in self.graph.get(node,[]):
@@ -149,46 +150,85 @@ class PathPlanner_2D:
       if (cost is not None): # found a path for current scope
         cost = cost + greatCircleDistance_km(node, neighbor)
         memo[tuple(node)] = cost
-        self.path[path_index][tuple(node)] = cost
+        self.dp_path[path_index][tuple(node)] = cost
       if (tuple(neighbor) in memo): # path exists in global
         cost = memo[tuple(neighbor)] + greatCircleDistance_km(node,neighbor) 
         memo[tuple(node)] = cost
-        self.path[path_index][tuple(node)] = cost
+        self.dp_path[path_index][tuple(node)] = cost
         if tuple(node) == self.start:
            path_index = path_index + 1
-           self.path[path_index] = {self.end : 0}
+           self.dp_path[path_index] = {self.end : 0}
 
   def dijkstra(self):
+    """
+    Dijskatra implementation, current 
+    """
     pq = [(0, self.start)]
     costs = {self.start: 0}
     self.parent_map = {}
     
     while pq:
-        current_cost, current_node = heapq.heappop(pq)
-        if tuple(current_node) == self.end:
-            break
+      current_cost, current_node = heapq.heappop(pq)
+      if tuple(current_node) == self.end:
+        break
         
-        for neighbor in self.graph.get(tuple(current_node), []):
-            travel_cost = greatCircleDistance_km(current_node, neighbor)
-            new_cost = current_cost + travel_cost
+      for neighbor in self.graph.get(tuple(current_node), []):
+        travel_cost = greatCircleDistance_km(current_node, neighbor)
+        new_cost = current_cost + travel_cost
             
-            if tuple(neighbor) not in costs or new_cost < costs[tuple(neighbor)]:
-                costs[tuple(neighbor)] = new_cost
-                self.parent_map[tuple(neighbor)] = current_node
-                heapq.heappush(pq, (new_cost, neighbor))
+        if tuple(neighbor) not in costs or new_cost < costs[tuple(neighbor)]:
+          costs[tuple(neighbor)] = new_cost
+          self.parent_map[tuple(neighbor)] = current_node
+          heapq.heappush(pq, (new_cost, neighbor))
      
 
   def reconstruct_paths(self):
     node = self.end
     while tuple(node) in self.parent_map:
-        self.path.append(tuple(node))
+        self.dij_path.append(tuple(node))
         node = self.parent_map[tuple(node)]
-    self.path.append(self.start)
-    return self.path[::-1]
-        
+    self.dij_path.append(self.start)
+    return self.dij_path[::-1]
+  
+  def plot_graph(self, bTrue, bNodes,grid):
+    if (bTrue):
+      plt.scatter(self.start[1], self.start[0], c='green', marker='o', s=100, label='Start Point', edgecolors='black', linewidth=1.2)
+      plt.scatter(self.end[1], self.end[0], c='red', marker='o', s=100, label='End Point', edgecolors='black', linewidth=1.2)
+      for node, neighbors in self.graph.items():
+        lat1, lon1 = node
+        for neighbor in neighbors:
+          lat2, lon2 = neighbor
+          plt.plot([lon1, lon2], [lat1, lat2], 'k-', linewidth=0.5)
+    if (bNodes):
+      for row in grid:
+        for lat, lon in row:
+            plt.scatter(lon, lat, c='blue', marker='.', s=75)
 
- 
-  def visualize_grid(self, grid, start, end):
+  
+  def plot_dp(self, bTrue):
+    """
+    Helper function to clean up the visualize graph
+    """
+    if (bTrue):
+      self.find_path(self.start)
+      for i in range(len(self.dp_path)):
+        y_path,x_path = zip(*self.dp_path[i])
+        plt.plot(x_path, y_path, marker='o', color='green', linestyle='-', linewidth=2, markersize=6)
+        # I kind of want this to be able to plot each path in a different color but oh well
+
+  def plot_dijkstra(self, bTrue):
+    """
+    Helper function to clean up the visualize graph
+    """
+    if (bTrue):
+      self.dijkstra() 
+      self.reconstruct_paths()
+      y_path,x_path = zip(*self.dij_path)
+      plt.plot(x_path, y_path, marker='o', color='green', linestyle='-', linewidth=2, markersize=6)
+      for lat, lon in zip(y_path, x_path):
+        plt.text(lon, lat, f"({lat:.2f}, {lon:.2f})", fontsize=3, ha='right', va='bottom', color='black')
+    
+  def visualize_grid(self, grid):
     """
     Visualizes the generated grid.
     """
@@ -198,30 +238,11 @@ class PathPlanner_2D:
     
     self.generate_graph(grid)
 
-    # this is to plot the nodes but it looks kinda clunky
-    # for row in grid:
-    #     for lat, lon in row:
-    #         plt.scatter(lon, lat, c='blue', marker='.', s=75)
+    self.plot_graph(True,False,grid)
 
-    plt.scatter(start[1], start[0], c='green', marker='o', s=100, label='Start Point', edgecolors='black', linewidth=1.2)
-    plt.scatter(end[1], end[0], c='red', marker='o', s=100, label='End Point', edgecolors='black', linewidth=1.2)
-    for node, neighbors in self.graph.items():
-        lat1, lon1 = node
-        for neighbor in neighbors:
-            lat2, lon2 = neighbor
-            plt.plot([lon1, lon2], [lat1, lat2], 'k-', linewidth=0.5)
+    self.plot_dp(True)
 
-    # self.find_path(self.start)
-    # for i in range(len(self.path)):
-    #   y_path,x_path = zip(*self.path[i])
-    #   plt.plot(x_path, y_path, marker='o', color='green', linestyle='-', linewidth=2, markersize=6)
-
-    self.dijkstra() 
-    self.reconstruct_paths()
-    y_path,x_path = zip(*self.path)
-    plt.plot(x_path, y_path, marker='o', color='green', linestyle='-', linewidth=2, markersize=6)
-    for lat, lon in zip(y_path, x_path):
-      plt.text(lon, lat, f"({lat:.2f}, {lon:.2f})", fontsize=3, ha='right', va='bottom', color='black')
+    self.plot_dijkstra(False)
 
     plt.xlabel('Longitude')
     plt.ylabel('Latitude')
@@ -260,10 +281,10 @@ end_point = (20.696066, -155.915948)  # HI
 
 # start_point = (39.5, -119.8)  # reno
 # end_point = (25.2, 55.2)  # dubai
-memo = {}
+memo = {} # not using this
 path_index = 0
 pathplanner = PathPlanner_2D(start_point, end_point)
 grid_points = pathplanner.generate_grid(*start_point, *end_point)
-pathplanner.visualize_grid(grid_points, start_point, end_point)
+pathplanner.visualize_grid(grid_points)
 
 
