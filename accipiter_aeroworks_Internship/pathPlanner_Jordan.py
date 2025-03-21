@@ -126,23 +126,23 @@ class PathPlanner_2D:
     
     if tuple(node) in memo:
       # maybe add a insert into path here
-      for i in range(len(self.dp_path)):
-        try:
-          self.dp_path[path_index][tuple(node)] = self.dp_path[i][tuple(node)]
-          path_index = path_index + 1
-          self.dp_path[path_index] = {self.end: 0}
-          break
-        except:
-           None
+      # for i in range(len(self.dp_path)):
+      #   try:
+      #     self.dp_path[path_index][tuple(node)] = self.dp_path[i][tuple(node)]
+      #     path_index = path_index + 1
+      #     self.dp_path[path_index] = {self.end: 0}
+      #     break
+      #   except:
+      #      None
       return memo[tuple(node)] #not sure if i need this condition anymore
     # but i am leaving it in just in case
     
     if tuple(node) == self.end:
-      if (path_index in self.dp_path):
-        path_index = path_index+1
-        self.dp_path[path_index] = {self.end:0}
-      else:
-        self.dp_path[path_index] = {self.end:0}
+      # if (path_index in self.dp_path):
+      #   path_index = path_index+1
+        # self.dp_path[path_index] = {self.end:0}
+      #else:
+        # self.dp_path[path_index] = {self.end:0}
       return 0
     
     for neighbor in self.graph.get(node,[]):
@@ -150,18 +150,23 @@ class PathPlanner_2D:
       if (cost is not None): # found a path for current scope
         cost = cost + greatCircleDistance_km(node, neighbor)
         memo[tuple(node)] = cost
-        self.dp_path[path_index][tuple(node)] = cost
+        # self.dp_path[path_index][tuple(node)] = cost
       if (tuple(neighbor) in memo): # path exists in global
         cost = memo[tuple(neighbor)] + greatCircleDistance_km(node,neighbor) 
         memo[tuple(node)] = cost
-        self.dp_path[path_index][tuple(node)] = cost
-        if tuple(node) == self.start:
-           path_index = path_index + 1
-           self.dp_path[path_index] = {self.end : 0}
+        # self.dp_path[path_index][tuple(node)] = cost
+        # if tuple(node) == self.start:
+        #    path_index = path_index + 1
+        #    self.dp_path[path_index] = {self.end : 0}
 
   def dijkstra(self):
     """
-    Dijskatra implementation, current 
+    Dijsktra implementation, gonna implement some static weather data soon 
+    (probably just in a file, not quite sure how that should be implemented quite yet)
+
+    Another thing I have to think about is how to simulate the resting periods
+    which i was thinking could calculate the amount of time it requires to get to one node from its current 
+    or how much battery life it takes
     """
     pq = [(0, self.start)]
     costs = {self.start: 0}
@@ -174,15 +179,24 @@ class PathPlanner_2D:
         
       for neighbor in self.graph.get(tuple(current_node), []):
         travel_cost = greatCircleDistance_km(current_node, neighbor)
-        new_cost = current_cost + travel_cost
+        # add some weather data here to increase the cost
+        # weather_cost
+        # the drift of the robot probably doesn't matter
+        # since the next way point will stay the same coordinates
+        new_cost = current_cost + travel_cost # + weather_cost, etc
             
         if tuple(neighbor) not in costs or new_cost < costs[tuple(neighbor)]:
           costs[tuple(neighbor)] = new_cost
           self.parent_map[tuple(neighbor)] = current_node
           heapq.heappush(pq, (new_cost, neighbor))
+    
+    return self.reconstruct_path()
      
 
-  def reconstruct_paths(self):
+  def reconstruct_path(self):
+    """
+    This function is used for Dijkstra
+    """
     node = self.end
     while tuple(node) in self.parent_map:
         self.dij_path.append(tuple(node))
@@ -191,6 +205,12 @@ class PathPlanner_2D:
     return self.dij_path[::-1]
   
   def plot_graph(self, bTrue, bNodes,grid):
+    """
+    Helper function just to clean up the plot function
+    bTrue is True to show all the conections
+    bNodes is True to show every node
+    grid is the generated points for the nodes
+    """
     if (bTrue):
       plt.scatter(self.start[1], self.start[0], c='green', marker='o', s=100, label='Start Point', edgecolors='black', linewidth=1.2)
       plt.scatter(self.end[1], self.end[0], c='red', marker='o', s=100, label='End Point', edgecolors='black', linewidth=1.2)
@@ -208,21 +228,28 @@ class PathPlanner_2D:
   def plot_dp(self, bTrue):
     """
     Helper function to clean up the visualize graph
+    bTrue is true to show the DP path
     """
     if (bTrue):
       self.find_path(self.start)
-      for i in range(len(self.dp_path)):
-        y_path,x_path = zip(*self.dp_path[i])
-        plt.plot(x_path, y_path, marker='o', color='green', linestyle='-', linewidth=2, markersize=6)
+      # for i in range(len(self.dp_path)):
+      #   y_path,x_path = zip(*self.dp_path[i])
+      #   plt.plot(x_path, y_path, marker='o', color='green', linestyle='-', linewidth=2, markersize=6)
+      # I changed the above comment code since i removed the path and memo should have every path node in it
         # I kind of want this to be able to plot each path in a different color but oh well
+      coordinates = list(memo.keys())
+      y_path,x_path = (zip(*(list(memo.keys()))))
+      plt.plot(x_path, y_path, marker='o', color='green', linestyle='-', linewidth=2, markersize=6)
 
   def plot_dijkstra(self, bTrue):
     """
     Helper function to clean up the visualize graph
+    bTrue is true to show the dijkstra path
     """
     if (bTrue):
       self.dijkstra() 
-      self.reconstruct_paths()
+      # self.reconstruct_path() # This is called in dijkstra but when its called here 
+      # it is the hypotnuse for some reason (not sure why)
       y_path,x_path = zip(*self.dij_path)
       plt.plot(x_path, y_path, marker='o', color='green', linestyle='-', linewidth=2, markersize=6)
       for lat, lon in zip(y_path, x_path):
@@ -240,9 +267,9 @@ class PathPlanner_2D:
 
     self.plot_graph(True,False,grid)
 
-    self.plot_dp(True)
+    self.plot_dp(False)
 
-    self.plot_dijkstra(False)
+    self.plot_dijkstra(True)
 
     plt.xlabel('Longitude')
     plt.ylabel('Latitude')
