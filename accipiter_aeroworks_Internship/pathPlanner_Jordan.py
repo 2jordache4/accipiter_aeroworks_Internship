@@ -230,7 +230,7 @@ class PathPlanner_2D:
     
   def visualize_grid(self, grid):
     """
-    Visualizes the generated grid.
+    Visualizes the generated grid/graph and path.
     """
     # count = 0 debugger thing
 
