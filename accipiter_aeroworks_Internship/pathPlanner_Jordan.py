@@ -126,27 +126,34 @@ class PathPlanner_2D:
     and then run it again as a new day (updating the data) and repeat.
     This would kinda be like a stepwise approaching, and as it is called have a new starting
     point fed in. Might work on this in another function though.
+
+    
+    Because this is forward searching the paths is not working correctly.
+    But I think since this will eventually be dynamic foreward
+    searching is the better option than back searching (since it can be
+    imitated as days going forward)
     """
 
     global path_index
     
     if tuple(node) in memo:
-      # maybe add a insert into path here
       for i in range(len(self.dp_path)):
         try:
           self.dp_path[path_index][tuple(node)] = self.dp_path[i][tuple(node)]
+          self.plot_dp_debug(path_index)
           path_index = path_index + 1
           self.dp_path[path_index] = {self.end: 0}
           break
         except:
            None
-      return memo[tuple(node)] #not sure if i need this condition anymore
-    # but i am leaving it in just in case
+      return memo[tuple(node)] 
     
     if tuple(node) == self.end:
       if (path_index in self.dp_path):
+        self.plot_dp_debug(path_index)
         path_index = path_index+1
         self.dp_path[path_index] = {self.end:0}
+        # THESE PATHS ARE IN CHARGE OF EACH BRANCH BASICALLY
       else:
         self.dp_path[path_index] = {self.end:0}
       return 0
@@ -162,6 +169,7 @@ class PathPlanner_2D:
         memo[tuple(node)] = cost
         self.dp_path[path_index][tuple(node)] = cost
         if tuple(node) == self.start:
+           self.plot_dp_debug(path_index)
            path_index = path_index + 1
            self.dp_path[path_index] = {self.end : 0}
 
@@ -247,16 +255,23 @@ class PathPlanner_2D:
       # This graph better connects all the paths but not all of them are complete paths
       for i in range(len(self.dp_path)):
         y_path,x_path = zip(*self.dp_path[i])
-        plt.plot(x_path, y_path, marker='o', color='green', linestyle='-', linewidth=2, markersize=6)
+        plt.plot(x_path, y_path, marker='o', color=colors[i%len(colors)], linestyle='-', linewidth=2, markersize=6)
         for lat, lon in zip(y_path, x_path):
          plt.text(lon, lat, f"({lat:.2f}, {lon:.2f})", fontsize=3, ha='right', va='bottom', color='black')
 
       # this is no path and just all the nodes that have been visited, so I'll probably
       # have to write a function that reconstructs the best path from these options
-      # y_path,x_path = (zip(*(list(memo.keys())))) using memo (weird graph)
-      # plt.plot(x_path, y_path, marker='o', color='green', linestyle='-', linewidth=2, markersize=6)
+      y_path1,x_path1 = (zip(*(list(memo.keys())))) # using memo (weird graph)
+      # plt.plot(x_path1, y_path1, marker='o', color='blue', linestyle='-', linewidth=2, markersize=6)
       # for lat, lon in zip(y_path, x_path):
       #   plt.text(lon, lat, f"({lat:.2f}, {lon:.2f})", fontsize=3, ha='right', va='bottom', color='black')
+
+  def plot_dp_debug(self,index):
+    y_path,x_path = zip(*self.dp_path[index])
+    plt.plot(x_path, y_path, marker='o', color=colors[index%len(colors)], linestyle='-', linewidth=2, markersize=6)
+    for lat, lon in zip(y_path, x_path):
+      plt.text(lon, lat, f"({lat:.2f}, {lon:.2f})", fontsize=3, ha='right', va='bottom', color='black')
+
 
   def plot_dijkstra(self, bTrue):
     """
@@ -319,6 +334,8 @@ def greatCircleDistance_km(pnt1, pnt2):
     
     return length_km
 
+colors = ['red', 'green', 'blue', 'purple', 'orange', 'yellow', 'cyan' \
+          ,'violet', 'black', 'grey']
 
 start_point = (37.155236, -122.359845)  # CA
 end_point = (20.696066, -155.915948)  # HI
