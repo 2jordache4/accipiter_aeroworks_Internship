@@ -120,29 +120,35 @@ class PathPlanner_2D:
     I feel like we should start at the end and work backwords which is not what
     I am currently doing
     should implement memoization
+
+    My thought process is to find the best path as if it can fly it in one day,
+    see how far the VTOL can actually fly in one day (in number of nodes rounding down)
+    and then run it again as a new day (updating the data) and repeat.
+    This would kinda be like a stepwise approaching, and as it is called have a new starting
+    point fed in. Might work on this in another function though.
     """
 
     global path_index
     
     if tuple(node) in memo:
       # maybe add a insert into path here
-      # for i in range(len(self.dp_path)):
-      #   try:
-      #     self.dp_path[path_index][tuple(node)] = self.dp_path[i][tuple(node)]
-      #     path_index = path_index + 1
-      #     self.dp_path[path_index] = {self.end: 0}
-      #     break
-      #   except:
-      #      None
+      for i in range(len(self.dp_path)):
+        try:
+          self.dp_path[path_index][tuple(node)] = self.dp_path[i][tuple(node)]
+          path_index = path_index + 1
+          self.dp_path[path_index] = {self.end: 0}
+          break
+        except:
+           None
       return memo[tuple(node)] #not sure if i need this condition anymore
     # but i am leaving it in just in case
     
     if tuple(node) == self.end:
-      # if (path_index in self.dp_path):
-      #   path_index = path_index+1
-        # self.dp_path[path_index] = {self.end:0}
-      #else:
-        # self.dp_path[path_index] = {self.end:0}
+      if (path_index in self.dp_path):
+        path_index = path_index+1
+        self.dp_path[path_index] = {self.end:0}
+      else:
+        self.dp_path[path_index] = {self.end:0}
       return 0
     
     for neighbor in self.graph.get(node,[]):
@@ -150,14 +156,14 @@ class PathPlanner_2D:
       if (cost is not None): # found a path for current scope
         cost = cost + greatCircleDistance_km(node, neighbor)
         memo[tuple(node)] = cost
-        # self.dp_path[path_index][tuple(node)] = cost
+        self.dp_path[path_index][tuple(node)] = cost
       if (tuple(neighbor) in memo): # path exists in global
         cost = memo[tuple(neighbor)] + greatCircleDistance_km(node,neighbor) 
         memo[tuple(node)] = cost
-        # self.dp_path[path_index][tuple(node)] = cost
-        # if tuple(node) == self.start:
-        #    path_index = path_index + 1
-        #    self.dp_path[path_index] = {self.end : 0}
+        self.dp_path[path_index][tuple(node)] = cost
+        if tuple(node) == self.start:
+           path_index = path_index + 1
+           self.dp_path[path_index] = {self.end : 0}
 
   def dijkstra(self):
     """
@@ -237,9 +243,20 @@ class PathPlanner_2D:
       #   plt.plot(x_path, y_path, marker='o', color='green', linestyle='-', linewidth=2, markersize=6)
       # I changed the above comment code since i removed the path and memo should have every path node in it
         # I kind of want this to be able to plot each path in a different color but oh well
-      coordinates = list(memo.keys())
-      y_path,x_path = (zip(*(list(memo.keys()))))
-      plt.plot(x_path, y_path, marker='o', color='green', linestyle='-', linewidth=2, markersize=6)
+
+      # This graph better connects all the paths but not all of them are complete paths
+      for i in range(len(self.dp_path)):
+        y_path,x_path = zip(*self.dp_path[i])
+        plt.plot(x_path, y_path, marker='o', color='green', linestyle='-', linewidth=2, markersize=6)
+        for lat, lon in zip(y_path, x_path):
+         plt.text(lon, lat, f"({lat:.2f}, {lon:.2f})", fontsize=3, ha='right', va='bottom', color='black')
+
+      # this is no path and just all the nodes that have been visited, so I'll probably
+      # have to write a function that reconstructs the best path from these options
+      # y_path,x_path = (zip(*(list(memo.keys())))) using memo (weird graph)
+      # plt.plot(x_path, y_path, marker='o', color='green', linestyle='-', linewidth=2, markersize=6)
+      # for lat, lon in zip(y_path, x_path):
+      #   plt.text(lon, lat, f"({lat:.2f}, {lon:.2f})", fontsize=3, ha='right', va='bottom', color='black')
 
   def plot_dijkstra(self, bTrue):
     """
@@ -267,9 +284,9 @@ class PathPlanner_2D:
 
     self.plot_graph(True,False,grid)
 
-    self.plot_dp(False)
+    self.plot_dp(True)
 
-    self.plot_dijkstra(True)
+    self.plot_dijkstra(False)
 
     plt.xlabel('Longitude')
     plt.ylabel('Latitude')
