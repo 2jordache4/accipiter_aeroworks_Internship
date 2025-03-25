@@ -17,6 +17,5 @@ for lat in latitudes:
             'sunlight_intensity': sunlight_intensity
         }
 
-# Print sample data
-for key, value in list(weather_data.items())[:10]:  # Print first 10 points
+for key, value in list(weather_data.items())[:10]:
     print(f"{key}: {value}")

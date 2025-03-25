@@ -58,6 +58,9 @@ class PathPlanner_2D:
     |
     v
     where the first corner is our start
+
+    I want to change this so the first corner is NOT our start, probably at least 2 nodes above
+    and same for the end (It'll match the paper better)
     """
     lat_step = spacing_km / 111.32
     lon_step = lambda lat: spacing_km / (111.32 * np.cos(np.radians(lat)))
@@ -121,7 +124,7 @@ class PathPlanner_2D:
     I am currently doing
     should implement memoization
 
-    My thought process is to find the best path as if it can fly it in one day,
+    My thought process is to find the best path as if it can fly it in one day, similar to steves
     see how far the VTOL can actually fly in one day (in number of nodes rounding down)
     and then run it again as a new day (updating the data) and repeat.
     This would kinda be like a stepwise approaching, and as it is called have a new starting
@@ -172,6 +175,26 @@ class PathPlanner_2D:
            self.plot_dp_debug(path_index)
            path_index = path_index + 1
            self.dp_path[path_index] = {self.end : 0}
+
+  def find_path_v2(self,node,time):
+    """
+    My previous attempt is not the same as the sailing virtual paper. The first node should check all (they use 9, mine is 7)
+    of nodes, and each of those nodes gets a branch based on the shortest time. Each child node has a unique parent (whereas my
+    previous attempt did not do that, each node was connnected). Using this method, only ONE path should make it to the departure
+    and that is the optimal path. 
+
+    This means that each node gets to check all of its neighbors to attempt to make a connection, and if another node is closer
+    that connection is severed. This also makes it start to back track it progress since each connection is unique. 
+
+    My plan is to make a dictionary that holds each of these paths and each has a naighbor. Once all the neighbors have been checked and
+    have an associated cost, go to the node below do the same and if the cost to a neighbor is shorter then the previous node
+    delete the neighbor from the previous dictionary and put it in the new dictionary
+
+
+
+    Go to the next row for one node, check the vertices in the previous row and the shortest one is connected to it.
+    """
+
 
   def dijkstra(self):
     """
@@ -342,6 +365,11 @@ end_point = (20.696066, -155.915948)  # HI
 
 # start_point = (39.5, -119.8)  # reno
 # end_point = (25.2, 55.2)  # dubai
+
+time = {0: "4:00am"} # The format of this can change
+# time at 0: is the departure time, 
+# time at N is the arrival time (the last entry in the dict)
+
 memo = {} # not using this
 path_index = 0
 pathplanner = PathPlanner_2D(start_point, end_point)
