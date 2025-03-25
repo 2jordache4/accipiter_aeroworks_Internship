@@ -28,6 +28,12 @@ class RenoDubai():
 
 # Steves used libraries
 
+class Node:
+  def __init__(self):
+    self.children = []
+    self.root = None
+    #self.data
+
 class PathPlanner_2D:
   def __init__(self, start, end):
     self.dij_path = [] # FOR DIJKSTRA
@@ -37,6 +43,7 @@ class PathPlanner_2D:
     self.start = start
     self.end = end
     self.graph = {}
+    self.path_v2 = {}
     # self.grid = self.generate_grid(start[0], start[1], end[0],end[1])
     # Maybe we can have it print every path
     # this will be in cartesian coordinates
@@ -176,7 +183,7 @@ class PathPlanner_2D:
            path_index = path_index + 1
            self.dp_path[path_index] = {self.end : 0}
 
-  def find_path_v2(self,node,time):
+  def find_path_v2(self,node): #might add time as a parameter, just wanna get the tree working first
     """
     My previous attempt is not the same as the sailing virtual paper. The first node should check all (they use 9, mine is 7)
     of nodes, and each of those nodes gets a branch based on the shortest time. Each child node has a unique parent (whereas my
@@ -194,6 +201,11 @@ class PathPlanner_2D:
 
     Go to the next row for one node, check the vertices in the previous row and the shortest one is connected to it.
     """
+
+
+
+
+
 
 
   def dijkstra(self):
