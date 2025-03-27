@@ -191,7 +191,6 @@ class Graph:
 
         self.plot_graph(True, False, self.grid)
 
-
         plt.xlabel('Longitude')
         plt.ylabel('Latitude')
         plt.title('Graph paths')
@@ -215,35 +214,42 @@ class PathPlanner:
     def find_path(self, root):
         # since i add the neighbors for the first node in the
         # init function we just need to jump right into the neighbors
+        #
+        # I want to change this again so it takes a childs child, and checks all the
+        # children to find shortest path, then moves onto the next childs child. It feels the most
+        # like the paper
         for index in range(
                 len(root.children
                     )):  # i use index bc cost at 0 is associated to child at 0
-          if tuple(root.children[index].coords) in self.graph:
-            for neighbor in self.graph[tuple(root.children[index].coords
-                                             )]:  #checking the children nodes
-                found_index, target_index = self.find_target(root, neighbor)
-                if found_index is None and target_index is None:
-                    root.children[index].children.append(
-                        Node(neighbor, root.children[index]))
-                    root.children[index].cost.append(
-                        greatCircleDistance_km(root.children[index].coords,
-                                               neighbor))
-                elif found_index == index:  # this means it is the same node, do nothing
-                    pass
-                else:
-                    if root.children[found_index].cost[
-                            target_index] > greatCircleDistance_km(
-                                root.children[index].coords, neighbor):
-                        root.children[found_index].children.pop(target_index)
-                        root.children[found_index].cost.pop(target_index)
-                        # remove the target from the previous node and append it to the next
+            if tuple(root.children[index].coords) in self.graph:
+                for neighbor in self.graph[tuple(
+                        root.children[index].coords
+                )]:  #checking the children nodes
+                    found_index, target_index = self.find_target(
+                        root, neighbor)
+                    if found_index is None and target_index is None:
                         root.children[index].children.append(
                             Node(neighbor, root.children[index]))
                         root.children[index].cost.append(
                             greatCircleDistance_km(root.children[index].coords,
                                                    neighbor))
+                    elif found_index == index:  # this means it is the same node, do nothing
+                        pass
+                    else:
+                        if root.children[found_index].cost[
+                                target_index] > greatCircleDistance_km(
+                                    root.children[index].coords, neighbor):
+                            root.children[found_index].children.pop(
+                                target_index)
+                            root.children[found_index].cost.pop(target_index)
+                            # remove the target from the previous node and append it to the next
+                            root.children[index].children.append(
+                                Node(neighbor, root.children[index]))
+                            root.children[index].cost.append(
+                                greatCircleDistance_km(
+                                    root.children[index].coords, neighbor))
         self.plot_tree(root)
-        for child in root.children:  # Recursive call to process all levels
+        for child in root.children:  
             self.find_path(child)
 
     def plot_tree(self, node):
