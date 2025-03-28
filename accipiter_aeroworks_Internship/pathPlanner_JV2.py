@@ -134,6 +134,10 @@ class Graph:
         lat_step = spacing_km / 111.32
         lon_step = lambda lat: spacing_km / (111.32 * np.cos(np.radians(lat)))
 
+        # start_lat = start_lat + (2 * lat_step)  # move 2 steps north
+        # end_lat = end_lat - (2 * lat_step)  # move 2 steps south
+        # this works but messes with the dictionary (the key values are slightly off)
+
         num_lat = int(abs(end_lat - start_lat) / lat_step) + 1
         num_lon = int(abs(end_lon - start_lon) / lon_step(start_lat)) + 1
 
@@ -182,7 +186,7 @@ class Graph:
                 for lat, lon in row:
                     plt.scatter(lon, lat, c='blue', marker='.', s=75)
 
-    def visualize(self, pathplanner):
+    def visualize(self):
         """
       Visualizes the generated grid/graph and path.
       """
@@ -204,12 +208,35 @@ class PathPlanner:
         self.start = start
         self.end = end
         self.root = Node(start)  # this will contain the optimal path
-        graph = Graph(start, end, 900)
+        graph = Graph(start, end, 200)
         self.graph = graph.graph
         for neighbor in self.graph[start]:
             self.root.children.append(Node(neighbor, self.root))
             self.root.cost.append(
                 greatCircleDistance_km(self.root.coords, neighbor))
+
+    def get_next_row(self):
+        pass
+
+    def find_pathV2(self, root):
+        root_coords = root.coords
+        for child in root:
+            if root_coords != self.start:
+                root.check_target()
+
+    def check_target(self, root, current, target):
+        best_dist = inf
+        best_current = 0
+        for node in root.children:
+            current_coords = tuple(node)
+            if target in self.graph(current_coords):
+                dist = greatCircleDistance_km(current_coords)
+                if dist < best_dist:
+                    best_dist = dist
+                    best_current = current_coords
+            count = count + 1
+        self.root.children[count].children.append(target, best_current)
+        self.root.cihldren[count].cost.append(best_dist)
 
     def find_path(self, root):
         # since i add the neighbors for the first node in the
@@ -249,14 +276,14 @@ class PathPlanner:
                                 greatCircleDistance_km(
                                     root.children[index].coords, neighbor))
         self.plot_tree(root)
-        for child in root.children:  
+        for child in root.children:
             self.find_path(child)
 
     def plot_tree(self, node):
         plt.scatter(node.coords[1], node.coords[0], c='blue', s=50, marker='o')
         for child in node.children:
             plt.plot([node.coords[1], child.coords[1]],
-                     [node.coords[0], child.coords[0]], 'k-')  # Draw edge
+                     [node.coords[0], child.coords[0]], 'k-')
             self.plot_tree(child)
 
     def find_target(self, root,
@@ -277,7 +304,7 @@ end_point = (20.696066, -155.915948)  # HI
 # end_point = (25.2, 55.2)  # dubai
 
 pathplanner = PathPlanner(start_point, end_point)
-graph = Graph(start_point, end_point, 900)
-graph.visualize(pathplanner)
+graph = Graph(start_point, end_point, 200)
+graph.visualize()
 pathplanner.find_path(pathplanner.root)
 graph.visualize(pathplanner)
