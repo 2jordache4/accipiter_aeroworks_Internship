@@ -81,17 +81,26 @@ class Graph:
         """
       Will use the grid to create a graph for the DP
       """
-        self.graph = {}
-        # total_distance = self.greatCircleDistance_km(self.start,self.end)
+        self.graph = {} # this will be a node 
+        # within the graph will be 
 
         for i in range(grid.shape[1] - 1):  # i is moving across columns
             current_column = grid[:,
                                   i]  # column starting from (37.155236,-122.359845) - (20.696066103,-122.359845)
             next_column = grid[:, i +
                                1]  #next_collumn is (37.155236,-122.38464626) - (20.696066103,-122.38464626)
-
+            top_node = None
+            bottom_node = None
             for j, node in enumerate(current_column):
                 #print(j,node) # j is moving across individual cells vertically
+                if (j != 0):
+                    top_node = node
+
+                if (j != len(current_column) - 1):
+                    bottom_node = current_column[j+1]
+                else:
+                    bottom_node = None
+
                 neighbors_top = 2
                 neighbors_bottom = 2
                 if (j == 0 or j == 1):
@@ -103,8 +112,8 @@ class Graph:
                 total_neighbors_top = j - neighbors_top
                 total_neighbors_bottom = j + neighbors_bottom
                 tuple_node = tuple(node)
-                self.graph[tuple_node] = next_column[
-                    total_neighbors_top:total_neighbors_bottom + 1]
+                self.graph[tuple_node]= {'top': top_node, 'bottom': bottom_node,'forward': next_column[
+                    total_neighbors_top:total_neighbors_bottom + 1]}
 
         return self.graph
 
@@ -210,10 +219,11 @@ class PathPlanner:
         self.root = Node(start)  # this will contain the optimal path
         graph = Graph(start, end, 200)
         self.graph = graph.graph
-        for neighbor in self.graph[start]:
-            self.root.children.append(Node(neighbor, self.root))
-            self.root.cost.append(
-                greatCircleDistance_km(self.root.coords, neighbor))
+        # for neighbor in self.graph[start]:
+        #     self.root.children.append(Node(neighbor, self.root))
+        #     self.root.cost.append(
+        #         greatCircleDistance_km(self.root.coords, neighbor))
+        # Change this 
 
     def get_next_row(self):
         pass
@@ -304,7 +314,7 @@ end_point = (20.696066, -155.915948)  # HI
 # end_point = (25.2, 55.2)  # dubai
 
 pathplanner = PathPlanner(start_point, end_point)
-graph = Graph(start_point, end_point, 200)
+graph = Graph(start_point, end_point, 900)
 graph.visualize()
 pathplanner.find_path(pathplanner.root)
 graph.visualize(pathplanner)
