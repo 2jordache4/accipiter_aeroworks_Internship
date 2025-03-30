@@ -62,11 +62,11 @@ def greatCircleDistance_km(pnt1, pnt2):
 
 class Node:
 
-    def __init__(self, coords, root=None):
+    def __init__(self, coords, root=None, cost = None):
         self.children = []
         self.root = root
         self.coords = coords
-        self.cost = []
+        self.cost = cost
 
 
 class Graph:
@@ -94,7 +94,7 @@ class Graph:
             for j, node in enumerate(current_column):
                 #print(j,node) # j is moving across individual cells vertically
                 if (j != 0):
-                    top_node = node
+                    top_node = current_column[j-1]
 
                 if (j != len(current_column) - 1):
                     bottom_node = current_column[j+1]
@@ -187,7 +187,15 @@ class Graph:
                         linewidth=1.2)
             for node, neighbors in self.graph.items():
                 lat1, lon1 = node
-                for neighbor in neighbors:
+                # if neighbors['top'] is not None:
+                #     top_lat2,top_lon2 = neighbors['top']
+                #     plt.plot([lon1, top_lon2], [lat1, top_lat2], 'green', linewidth=1)
+                # if neighbors['bottom'] is not None:
+                #     bottom_lat2,bottom_lon2 = neighbors['bottom']
+                #     plt.plot([lon1, bottom_lon2], [lat1, bottom_lat2], 'blue', linewidth=1)
+                # for debugging purposes
+
+                for neighbor in neighbors['forward']:
                     lat2, lon2 = neighbor
                     plt.plot([lon1, lon2], [lat1, lat2], 'k-', linewidth=0.5)
         if (bNodes):
@@ -202,7 +210,7 @@ class Graph:
 
         plt.figure(figsize=(10, 6))
 
-        self.plot_graph(True, False, self.grid)
+        self.plot_graph(True, True, self.grid)
 
         plt.xlabel('Longitude')
         plt.ylabel('Latitude')
@@ -233,6 +241,40 @@ class PathPlanner:
         for child in root:
             if root_coords != self.start:
                 root.check_target()
+    ###
+
+    def go_to_top(self, current):
+        while self.graph[current]['top'] is not None:
+            current = self.graph[current]['top']
+        return current
+
+    def best_target_node(self,current, target):
+        top_node = self.go_to_top(current)
+        best_node = None
+        best_cost = inf
+        dist = inf
+        while self.graph[top_node]['bottom'] is not None:
+            dist = greatCircleDistance_km(top_node, target)
+            if dist < best_cost:
+                best_cost = dist
+                best_node = top_node
+            top_node = tuple(self.graph[top_node]['bottom'])
+        target_tree_node = Node(target,best_node, best_cost)
+
+        if (current == self.start):
+            self.root.children.append(target_tree_node)
+
+
+
+
+
+    def find_pathV3(self,start, end):
+        for neighbors in self.graph[start]['forward']: # neighbors will be 'target
+            self.best_target_node(start,neighbors)
+
+
+
+    ###
 
     def check_target(self, root, current, target):
         best_dist = inf
@@ -314,7 +356,8 @@ end_point = (20.696066, -155.915948)  # HI
 # end_point = (25.2, 55.2)  # dubai
 
 pathplanner = PathPlanner(start_point, end_point)
-graph = Graph(start_point, end_point, 900)
-graph.visualize()
-pathplanner.find_path(pathplanner.root)
-graph.visualize(pathplanner)
+# graph = Graph(start_point, end_point, 200)
+# graph.visualize()
+pathplanner.find_pathV3(start_point,end_point)
+# pathplanner.find_path(pathplanner.root)
+# graph.visualize(pathplanner)
