@@ -68,6 +68,34 @@ class Node:
         self.coords = coords
         self.cost = cost
 
+    def find_node(self,root, target_node):
+        target_lon, target_lat = target_node.coords
+        current_lon, current_lat = root.coords
+        if root is None:
+            return None  # not found
+
+        if root.coords == target_node.coords:
+            return root  # found
+        
+        for children in root.children:
+            if children.coords[0] == target_lat:
+                self.find_node(children.target_node)
+                break
+
+        if (root.coords[0] < target_lat):
+            self.find_node(root.children[len(root.children) - 1]) # go to the lowest lat
+        else:
+            self.find_node(root.children[0]) # go to the highest lat
+
+        # if target_ < root.data:
+        #     return find_node(root.left, target)  # Search left subtree
+        # else:
+        #     return find_node(root.right, target)
+
+    def add_child(self,root, target_node):
+        add_root = self.find_node(self,root)
+        add_root.children.append(target_node)
+
 
 class Graph:
 
@@ -83,6 +111,9 @@ class Graph:
       """
         self.graph = {} # this will be a node 
         # within the graph will be 
+        #bFirst = True # This will be used so the first column of the graph 
+                      # doesn't have a top or bottom as well 
+        bInsert = False
 
         for i in range(grid.shape[1] - 1):  # i is moving across columns
             current_column = grid[:,
@@ -93,13 +124,14 @@ class Graph:
             bottom_node = None
             for j, node in enumerate(current_column):
                 #print(j,node) # j is moving across individual cells vertically
-                if (j != 0):
-                    top_node = current_column[j-1]
+                if (bInsert):
+                    if (j != 0):
+                        top_node = current_column[j-1]
 
-                if (j != len(current_column) - 1):
-                    bottom_node = current_column[j+1]
-                else:
-                    bottom_node = None
+                    if (j != len(current_column) - 1):
+                        bottom_node = current_column[j+1]
+                    else:
+                        bottom_node = None
 
                 neighbors_top = 2
                 neighbors_bottom = 2
@@ -114,6 +146,7 @@ class Graph:
                 tuple_node = tuple(node)
                 self.graph[tuple_node]= {'top': top_node, 'bottom': bottom_node,'forward': next_column[
                     total_neighbors_top:total_neighbors_bottom + 1]}
+        bInsert = True
 
         return self.graph
 
@@ -262,7 +295,9 @@ class PathPlanner:
         target_tree_node = Node(target,best_node, best_cost)
 
         if (current == self.start):
-            self.root.children.append(target_tree_node)
+            #self.root.children.append(target_tree_node)
+            best_node = self.root
+        self.root.add_child(best_node, target_tree_node)
 
 
 
@@ -359,5 +394,4 @@ pathplanner = PathPlanner(start_point, end_point)
 # graph = Graph(start_point, end_point, 200)
 # graph.visualize()
 pathplanner.find_pathV3(start_point,end_point)
-# pathplanner.find_path(pathplanner.root)
 # graph.visualize(pathplanner)
