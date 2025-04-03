@@ -76,7 +76,7 @@ class Node:
 
         if tuple(root.coords) == (target_lon,target_lat):
             return root  # found
-        
+
         for children in root.children:
             if children.coords[0] == target_lon:
                 found_node = self.find_node(children,target_node)
@@ -110,10 +110,10 @@ class Graph:
         """
       Will use the grid to create a graph for the DP
       """
-        self.graph = {} # this will be a node 
-        # within the graph will be 
-        #bFirst = True # This will be used so the first column of the graph 
-                      # doesn't have a top or bottom as well 
+        self.graph = {} # this will be a node
+        # within the graph will be
+        #bFirst = True # This will be used so the first column of the graph
+        # doesn't have a top or bottom as well
         bInsert = False
 
         for i in range(grid.shape[1] - 1):  # i is moving across columns
@@ -152,10 +152,14 @@ class Graph:
         last_column = grid[:,grid.shape[1]-1]
         last_node = last_column[1]
         for n in range(len(last_column) - 1):
-            self.graph[tuple(last_column[n])] = {'top': None, 'bottom': last_node,'forward': None}
+            if (n != 0):
+                top_node = last_column[n-1]
+            else:
+                top_node = None
             last_node = tuple(last_column[n+1])
-        self.graph[tuple(last_column[n])] = {'top': None, 'bottom': last_node,'forward': None}
-        
+            self.graph[tuple(last_column[n])] = {'top': top_node, 'bottom': last_node,'forward': None}
+        self.graph[tuple(last_column[n+1])] = {'top':last_column[n] , 'bottom': None,'forward': None}
+
 
         return self.graph
 
@@ -245,14 +249,16 @@ class Graph:
                 for lat, lon in row:
                     plt.scatter(lon, lat, c='blue', marker='.', s=75)
 
-    def visualize(self):
+    def visualize(self,pathplanner):
         """
       Visualizes the generated grid/graph and path.
       """
 
         plt.figure(figsize=(10, 6))
 
-        self.plot_graph(True, True, self.grid)
+        self.plot_graph(True, False, self.grid)
+        pathplanner.plot_tree(pathplanner.root)
+        pathplanner.plot_path(self.end)
 
         plt.xlabel('Longitude')
         plt.ylabel('Latitude')
@@ -267,7 +273,7 @@ class PathPlanner:
         self.start = start
         self.end = end
         self.root = Node(start)  # this will contain the optimal path
-        graph = Graph(start, end, 900)
+        graph = Graph(start, end, 200)
         self.graph = graph.graph
 
     def go_to_top(self, current):
@@ -276,7 +282,7 @@ class PathPlanner:
             current = tuple(self.graph[current]['top'])
         return current
 
-    def best_target_node(self,current, target):
+    def best_target_node(self, current, target):
         """
         This function takes a target node (a node from the future slice)
         and checks it against the current slice to find the best path
@@ -296,12 +302,26 @@ class PathPlanner:
         if dist < best_cost:
             best_cost = dist
             best_node = top_node
-        target_tree_node = Node(target,best_node, best_cost)
+        target_tree_node = Node(target, best_node, best_cost)
 
         self.root.add_child(best_node, target_tree_node)
 
+    def best_branch_target(self, current, target):
+        """
+        This function will walk through every target in the slice
+        n+1 and call best_target_node for each target.
+        When paired with best_target_node should be able to create a parent-child relationship
+        that is an arborescence
+        """
+        current = tuple(current)
+        target = tuple(target)
+        top_target = self.go_to_top(target)
+        while self.graph[top_target]['bottom'] is not None:
+            self.best_target_node(current,top_target)
+            top_target = tuple(self.graph[top_target]['bottom'])
+        self.best_target_node(current,top_target)
 
-    def find_pathV3(self,start, end, dp=None):
+    def find_pathV3(self, start, end, dp=None):
         if dp is None:
             dp = {}
 
@@ -309,38 +329,66 @@ class PathPlanner:
 
         if tuple(start) == tuple(end):
             return True
-        
+
         if start in dp:
             return dp[start]
-        
+
         dp[start] = False
 
-        if self.graph[start]['forward'] is not None: # checking forward neigbors
+        if self.graph[start][
+                'forward'] is not None:  # checking forward neigbors
             for neighbor in self.graph[start]['forward']:
                 # I think maybe in here I can add another loop that goes down the next
                 # slice (target slice)
-                self.best_target_node(start, neighbor) 
+                self.best_target_node(
+                    start, neighbor
+                )  # best target node checks every current node in the slice
                 if self.find_pathV3(neighbor, end, dp):
-                    dp[start] = True #path has been found
+                    dp[start] = True  #path has been found
                     return True
-        
+
         # if self.graph[start]['forward'] is not None:
         #     for neighbors in self.graph[start]['forward']: # neighbors will be 'target
         #         self.best_target_node(start,neighbors) # this checks target nodes
 
-        if self.graph[start]['bottom'] is not None: # go to bottom neighbor
+        if self.graph[start]['bottom'] is not None:  # go to bottom neighbor
             if self.find_pathV3(self.graph[start]['bottom'], end, dp):
                 dp[start] = True
                 return True
-        
+
         # while self.graph[start]['bottom'] is not None:
         #     if (self.find_pathV3(tuple(self.graph[start]['bottom']),end)):
         #         return True
-        
+
         if self.graph[start]['forward'] is not None:
             if (len(self.graph[start]['forward']) != 0):
-                self.find_pathV3(self.graph[start]['forward'][0],end) #start the next slice at the top
+                self.find_pathV3(self.graph[start]['forward'][0],
+                                 end)  #start the next slice at the top
+                
+    def find_pathV4(self, start, end, dp=None):
+        if dp is None:
+            dp = {}
 
+        start = tuple(start)
+
+        if start == tuple(end):
+            return True
+
+        if start in dp:
+            return dp[start]
+
+        dp[start] = False  # Assume path doesn't exist unless proven otherwise
+
+        # Ensure best-target relationships are created first
+        if self.graph[start]['forward'] is not None:
+            self.best_branch_target(start, self.graph[start]['forward'][0])  # Build relationships
+
+            if self.graph[start]['forward'][0] is not None:
+                if self.find_pathV4(self.graph[start]['forward'][0], end, dp):
+                    dp[start] = True
+                    return True
+
+        return False
 
     def find_path(self, root):
         # since i add the neighbors for the first node in the
@@ -384,12 +432,21 @@ class PathPlanner:
             self.find_path(child)
 
     def plot_tree(self, node):
-        plt.scatter(node.coords[1], node.coords[0], c='blue', s=50, marker='o')
+        plt.scatter(node.coords[1], node.coords[0], c='blue', s=25, marker='o')
         for child in node.children:
             plt.plot([node.coords[1], child.coords[1]],
-                     [node.coords[0], child.coords[0]], 'k-')
+                     [node.coords[0], child.coords[0]], 'c-')
             self.plot_tree(child)
 
+    def plot_path(self,end):
+        if(end != None):
+            end_node = self.root.find_node(self.root, end)
+            plt.scatter(end_node.coords[1], end_node.coords[0], c='red', s=25, marker='o')
+            self.plot_path(end_node.root)
+
+
+# start_point = (42.3555, 71.0565) # Boston
+# end_point = (35.6764, 139.6500) # Tokyo
 
 start_point = (37.155236, -122.359845)  # CA
 end_point = (20.696066, -155.915948)  # HI
@@ -398,7 +455,10 @@ end_point = (20.696066, -155.915948)  # HI
 # end_point = (25.2, 55.2)  # dubai
 
 pathplanner = PathPlanner(start_point, end_point)
-graph = Graph(start_point, end_point, 900)
-graph.visualize()
-pathplanner.find_pathV3(start_point,end_point)
-# graph.visualize(pathplanner)
+graph = Graph(start_point, end_point, 200)
+# graph.visualize()
+pathplanner.find_pathV4(start_point,end_point)
+#pathplanner.plot_tree(pathplanner.root)
+#graph.visualize()
+# pathplanner.plot_tree(pathplanner.root)
+graph.visualize(pathplanner)
