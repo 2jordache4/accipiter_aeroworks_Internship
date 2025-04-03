@@ -281,11 +281,26 @@ class PathPlanner:
         while self.graph[current]['top'] is not None:
             current = tuple(self.graph[current]['top'])
         return current
+    
+    def go_up_count(self,current,count):
+        current = tuple(current)
+        while self.graph[current]['top'] is not None and count <= count:
+            current = tuple(self.graph[current]['top'])
+            count = count + 1
+        return current
+    
+    def get_top_node(self,current):
+        current = tuple(current)
+        if self.graph[current]['top'] is not None:
+            return self.graph[current]['top']
+        else:
+            return current
 
-    def best_target_node(self, current, target):
+    def best_target_node_slice(self, current, target):
         """
         This function takes a target node (a node from the future slice)
         and checks it against the current slice to find the best path
+        THIS CHECKS THE WHOLE SLICE
         """
         current = tuple(current)
         top_node = self.go_to_top(current)
@@ -306,20 +321,52 @@ class PathPlanner:
 
         self.root.add_child(best_node, target_tree_node)
 
+    def best_target_node_count(self,current,target):
+        count = 0
+        current = tuple(current)
+        top_node = self.get_top_node(current)
+        if (top_node == current): #we're at the very top
+            count = count + 1
+        else:
+            top_node = self.get_top_node(current)
+            if (top_node == current): # we're one under the very top
+                count = count + 1
+
+        best_node = None
+        best_cost = inf
+        dist = inf
+        while self.graph[top_node]['bottom'] is not None and count <= 5:
+            dist = greatCircleDistance_km(top_node, target)
+            if dist < best_cost:
+                best_cost = dist
+                best_node = top_node
+            top_node = tuple(self.graph[top_node]['bottom'])
+            count = count + 1
+        dist = greatCircleDistance_km(top_node, target)
+        if dist < best_cost:
+            best_cost = dist
+            best_node = top_node
+        target_tree_node = Node(target, best_node, best_cost)
+
+        self.root.add_child(best_node, target_tree_node)
+        
+
     def best_branch_target(self, current, target):
         """
         This function will walk through every target in the slice
-        n+1 and call best_target_node for each target.
-        When paired with best_target_node should be able to create a parent-child relationship
+        n+1 and call best_target_node_slice for each target.
+        When paired with best_target_node_slice should be able to create a parent-child relationship
         that is an arborescence
         """
         current = tuple(current)
         target = tuple(target)
         top_target = self.go_to_top(target)
         while self.graph[top_target]['bottom'] is not None:
-            self.best_target_node(current,top_target)
+            self.best_target_node_slice(current,top_target)
+            #self.best_target_node_count(current,top_target)
             top_target = tuple(self.graph[top_target]['bottom'])
-        self.best_target_node(current,top_target)
+        self.best_target_node_slice(current,top_target)
+        #self.best_target_node_count(current,top_target)
 
     def find_pathV3(self, start, end, dp=None):
         if dp is None:
