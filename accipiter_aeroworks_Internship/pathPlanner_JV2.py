@@ -145,8 +145,8 @@ class Graph:
                 total_neighbors_top = j - neighbors_top
                 total_neighbors_bottom = j + neighbors_bottom
                 tuple_node = tuple(node)
-                self.graph[tuple_node]= {'top': top_node, 'bottom': bottom_node,'forward': next_column[
-                    total_neighbors_top:total_neighbors_bottom + 1]}
+                self.graph[tuple_node]= {'top': top_node, 'bottom': bottom_node,'forward': \
+                    [tuple(arr) for arr in next_column[total_neighbors_top:total_neighbors_bottom + 1]]}
             bInsert = True
 
         last_column = grid[:,grid.shape[1]-1]
@@ -324,11 +324,11 @@ class PathPlanner:
     def best_target_node_count(self,current,target):
         count = 0
         current = tuple(current)
-        top_node = self.get_top_node(current)
+        top_node = tuple(self.get_top_node(current))
         if (top_node == current): #we're at the very top
-            count = count + 1
+            count = count + 2
         else:
-            top_node = self.get_top_node(current)
+            top_node = tuple(self.get_top_node(current))
             if (top_node == current): # we're one under the very top
                 count = count + 1
 
@@ -348,7 +348,8 @@ class PathPlanner:
             best_node = top_node
         target_tree_node = Node(target, best_node, best_cost)
 
-        self.root.add_child(best_node, target_tree_node)
+        self.root.add_child(best_node, target_tree_node) # when this is called on slice 2, node 2
+        # the find function does not work... debug April 3rd
         
 
     def best_branch_target(self, current, target):
@@ -362,11 +363,34 @@ class PathPlanner:
         target = tuple(target)
         top_target = self.go_to_top(target)
         while self.graph[top_target]['bottom'] is not None:
-            self.best_target_node_slice(current,top_target)
-            #self.best_target_node_count(current,top_target)
+            self.best_target_node_count(current,top_target)
             top_target = tuple(self.graph[top_target]['bottom'])
-        self.best_target_node_slice(current,top_target)
-        #self.best_target_node_count(current,top_target)
+        self.best_target_node_count(current,top_target)
+
+    def best_branch_targetV2(self, current, target):
+        """
+        This function will walk through every target in the slice
+        n+1 and call best_target_node_slice for each target.
+        When paired with best_target_node_slice should be able to create a parent-child relationship
+        that is an arborescence
+        """
+        current = tuple(current)
+        target = tuple(target)
+        top_target = self.go_to_top(target)
+        bDone = False
+        while self.graph[top_target]['bottom'] is not None and not bDone:
+            if (top_target in self.graph[current]['forward']):
+            # self.best_target_node_slice(current,top_target)
+                self.best_target_node_count(current,top_target)
+                top_target = tuple(self.graph[top_target]['bottom'])
+            else:
+                if self.graph[current]['bottom'] is not None:
+                    current = tuple(self.graph[current]['bottom'])
+                else:
+                    bDone = True
+        # self.best_target_node_slice(current,top_target)
+        if (top_target in self.graph[current]['forward']):
+            self.best_target_node_count(current,top_target)
 
     def find_pathV3(self, start, end, dp=None):
         if dp is None:
@@ -428,7 +452,7 @@ class PathPlanner:
 
         # Ensure best-target relationships are created first
         if self.graph[start]['forward'] is not None:
-            self.best_branch_target(start, self.graph[start]['forward'][0])  # Build relationships
+            self.best_branch_targetV2(start, self.graph[start]['forward'][0])  # Build relationships
 
             if self.graph[start]['forward'][0] is not None:
                 if self.find_pathV4(self.graph[start]['forward'][0], end, dp):
