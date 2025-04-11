@@ -203,8 +203,8 @@ class Graph:
         lat_step = spacing_km / 111.32
         lon_step = lambda lat: spacing_km / (111.32 * np.cos(np.radians(lat)))
 
-        start_lat = start_lat + (2 * lat_step)  # move 2 steps north
-        end_lat = end_lat - (2 * lat_step)  # move 2 steps south
+        # start_lat = start_lat + (2 * lat_step)  # move 2 steps north
+        # end_lat = end_lat - (2 * lat_step)  # move 2 steps south
         # this works but messes with the dictionary (the key values are slightly off)
 
         num_lat = int(abs(end_lat - start_lat) / lat_step) + 1
@@ -441,8 +441,15 @@ end_point = (20.696066, -155.915948)  # HI
 
 # This is main basically 
 
-# pathplanner = PathPlanner(start_point, end_point)
+pathplanner = PathPlanner(start_point, end_point)
 graph = Graph(start_point, end_point, 150)
-# pathplanner.find_pathV4(start_point, end_point)
-# graph.visualize(pathplanner)
+pathplanner.find_pathV4(start_point, end_point)
+graph.visualize(pathplanner)
 print("debug")
+
+#state latus
+# reinforcement learning
+
+# MDP Assign each point on the grid a value based on information (If you knew high wind
+# in an area and knew a big storm) you could maximize the goal. Instead of going straight 
+# towards the goal. 

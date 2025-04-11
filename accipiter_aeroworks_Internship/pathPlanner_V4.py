@@ -68,8 +68,8 @@ def fetch_forecast_data(lat, lon, forecast_hour):
 
     return {
         "wind_speed_mps": float(wind_speed),
-        "wind_direction_deg": float(wind_dir_deg),
-        "cloud_cover_percent": float(cloud * 100)  # same with the other comment
+        "wind_direction_deg": float(wind_dir_deg)
+        #"cloud_cover_percent": float(cloud * 100)  # same with the other comment
     }
 
 
