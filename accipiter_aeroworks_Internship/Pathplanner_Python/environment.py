@@ -84,6 +84,75 @@ def fetch_forecast_data(lat, lon, forecast_hour, height=10):
 
     return float(wind_speed), float(wind_dir_deg), float(cloud_cov)
 
+def fetch_ocean_drift(lat, lon, forecast_hour):
+  """
+  Current attempt at recieving ocean data. The link is basically hardcoded
+  and ocean_ds does not currently grab any data. I believe the short name is 
+  incorrect.
+  """
+    base_url = "https://nomads.ncep.noaa.gov/pub/data/nccf/com/rtofs/prod"
+
+    now = datetime.now() #this wil get replaced with the parameter
+    run_time = now.replace(hour=(now.hour // 6) * 6,
+                           minute=0,
+                           second=0,
+                           microsecond=0)
+    run_str = run_time.strftime("%Y%m%d")
+    hour_str = run_time.strftime("%H")
+
+    forecast_str = f"{forecast_hour:02d}"
+    region = "west_conus" # This will need to be a function that assigns
+    # the correct region based on the lon lat
+
+    file_name = f"rtofs_glo.t00z.f024_{region}_std.grb2"
+    file_url = f"{base_url}/rtofs.{run_str}/{file_name}"
+    # Example: 'https://nomads.ncep.noaa.gov/pub/data/nccf/com/rtofs/prod/rtofs.20250520/rtofs_glo.t00z.f024_west_conus_std.grb2'
+
+    print(f"Downloading: {file_url}")
+    response = requests.get(file_url)
+    if response.status_code != 200:
+        raise Exception(f"Failed to download GRIB file: {file_url}")
+
+    with open(file_name, "wb") as f:
+        f.write(response.content)
+
+    print(file_name)
+    ocean_ds_u = xr.open_dataset(
+        file_name,
+        engine='cfgrib',
+        backend_kwargs={
+            'filter_by_keys': {
+                'typeOfLevel': 'surface',
+                'shortName': 'uocn' # Not the correct shortname
+            }
+        }  
+    )
+    ocean_ds_v = xr.open_dataset(
+        file_name,
+        engine='cfgrib',
+        backend_kwargs={
+            'filter_by_keys': {
+                'typeOfLevel': 'surface',
+                'shortName': 'vocn'
+            }
+        }  
+    )
+
+    u = ocean_ds_u['uocn'].sel(latitude=lat, longitude=lon,
+                             method="nearest").values
+    v = ocean_ds_v['vocn'].sel(latitude=lat, longitude=lon,
+                             method="nearest").values
+
+    ocean_speed = np.sqrt(u**2 + v**2)
+    ocean_speed_km = ocean_speed*3.6
+    ocean_dir_rad = np.arctan2(v, u)
+    ocean_dir_deg = (
+        270 - np.degrees(ocean_dir_rad)) % 360  # convert to meteorological
+
+    os.remove(file_name)  # get rid of file
+    
+    return float(ocean_speed), float(ocean_dir_deg)
+
 class Environment:
   """
   The class environment represents the environment. It consists
@@ -151,11 +220,14 @@ class Environment:
                 tuple_node = tuple(node)
                 wind_speed, wind_dir, cloud_cov = 0,0,0 #fetch_forecast_data(node[0],node[1],6)
                 # Uncomment the line above to make the calls
+                ocean_speed, ocean_dir = 0,0 #fetch_ocean_data(node[0], node[1],6)
                 self.graph[tuple_node]= {'top': top_node, 'bottom': bottom_node,'forward': \
                     [tuple(arr) for arr in next_column[total_neighbors_top:total_neighbors_bottom + 1]],\
-                        'wind_speed_mps': wind_speed, 'wind_dir_deg': wind_dir, 'cloud_cov':cloud_cov}
-                print(i,j)
-                print("Done \n")
+                        'wind_speed_mps': wind_speed, 'wind_dir_deg': wind_dir, 'cloud_cov':cloud_cov, \
+                        'ocean_speed_mps': ocean_speed, 'ocean_dir_deg': ocean_dir}
+                # print(i,j)
+                #print("Done \n")
+                # These were used to watch progress ^
             bInsert = True
 
         last_column = grid[:, grid.shape[1] - 1]
