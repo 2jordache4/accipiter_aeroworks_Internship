@@ -44,7 +44,7 @@ class PathPlanner:
         """
         self.root = Node(start)
         self.Env = Environment(start, end, spacing)
-        self.graph = self.Graph.graph
+        self.graph = self.Env.graph
         self.start = self.get_best_start(start) 
         # ^ This will choose the node in the graph closest to the input
         self.end = self.get_best_end(end)
@@ -221,7 +221,7 @@ class PathPlanner:
       """
       Used to print the path and graph in 2D space
       """
-      self.Graph.visualize(self)
+      self.Env.visualize(self)
     
 
     def to_json(self, file):
@@ -231,7 +231,7 @@ class PathPlanner:
       visualization.
       """
        data = {
-           'graph': self.Graph.graph_to_json(file),
+           'graph': self.Env.graph_to_json(file),
            'path': self.path
        }
        with open(file, "w") as f:
