@@ -109,6 +109,8 @@ class Graph:
       forward is a list of the 3-5 forward neighbors,
       wind_speed_mps is a float for wind (meters per second),
       wind_dir_deg is a float for the degrees of where the wind is coming from -> where its going.
+
+      NOTE: Node in the instance of this function is actually a cell of the grid. Not of the class node.
       """
         self.graph = {}
         bInsert = False
