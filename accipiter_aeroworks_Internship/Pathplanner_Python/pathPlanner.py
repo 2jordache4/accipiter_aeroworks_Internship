@@ -183,7 +183,7 @@ class PathPlanner:
         if self.graph[start]['forward'] is not None:
             self.best_branch_target(start, self.graph[start]['forward'][0])
             if self.graph[start]['forward'][0] is not None:
-                if self.find_pathV4(self.graph[start]['forward'][0], end, dp):
+                if self.find_path(self.graph[start]['forward'][0], end, dp):
                     dp[start] = True
                     return True
 
