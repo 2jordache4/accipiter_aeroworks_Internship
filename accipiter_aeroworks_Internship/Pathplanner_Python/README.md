@@ -1,5 +1,7 @@
 This is the readme for the python prototype of the pathplanner written by Jordan Cousineau.
 
+The files are expected to be in the same directory.
+
 The pathplanner, environment, and node(s) can be found in their respective .py files.
 
 Overview 
