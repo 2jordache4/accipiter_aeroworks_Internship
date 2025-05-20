@@ -82,9 +82,9 @@ def fetch_forecast_data(lat, lon, forecast_hour, height=10):
 
     return float(wind_speed), float(wind_dir_deg)
 
-class Graph:
+class Environment:
   """
-  The class graph represents the environment. It consists
+  The class environment represents the environment. It consists
   of creating a grid where each row has the same longitude and 
   each column has the same latitude. A forward facing, 5-neighbor 
   graph is then created using the grid which will be used for 
