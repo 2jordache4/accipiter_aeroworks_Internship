@@ -43,7 +43,7 @@ class PathPlanner:
         which is then used to create the tree (with optimal path)
         """
         self.root = Node(start)
-        self.Graph = Graph(start, end, spacing)
+        self.Env = Environment(start, end, spacing)
         self.graph = self.Graph.graph
         self.start = self.get_best_start(start) 
         # ^ This will choose the node in the graph closest to the input
