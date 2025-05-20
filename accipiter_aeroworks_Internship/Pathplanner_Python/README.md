@@ -12,4 +12,4 @@ Future / Fixes
 --------------
 The current version of main does not: extend the grid, offer data on ocean drift, or utilize dynamic programming to its fullest capabilities. 
 
-You can find the current attempt at the extension of the grid in Environment.py under generate_grid_2. This does successfully extend the grid, but when it is being used for the pathplanner it does not end up finding a path. There is also an attempt to find ocean data under the fetch ocean function in Environment.py.
+You can find the current attempt at the extension of the grid in Environment.py under generate_grid_2. This does successfully extend the grid, but when it is being used for the pathplanner it does not end up finding a path. To change the grid being used, you have to go to the Environment class and change the self.grid to the new grid function. There is also an attempt to find ocean data under the fetch ocean function in Environment.py.
