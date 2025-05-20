@@ -54,7 +54,6 @@ def fetch_forecast_data(lat, lon, forecast_hour, height=10):
         }  
     )
 
-    # cannot get this to work, not too sure why
     cloud_ds = xr.open_dataset(
     	file_name,
     	engine='cfgrib',
