@@ -1,5 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import requests
+import xarray as xr
+from datetime import datetime
+import os
 
 def fetch_forecast_data(lat, lon, forecast_hour, height=10):
   """
