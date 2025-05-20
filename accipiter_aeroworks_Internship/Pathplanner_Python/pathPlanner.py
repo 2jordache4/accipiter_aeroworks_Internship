@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from math import inf
 from node import Node
-from graph import Graph
+from environment import Environment
 
 """
 This is the file for the class PathPlanner and the great circle distance formula. 
