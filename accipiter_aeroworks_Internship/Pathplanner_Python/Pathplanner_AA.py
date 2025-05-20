@@ -1,4 +1,6 @@
-
+"""
+This is the original pathplanner provided by Accipiter Aeroworks (Steve Carlson)
+"""
 
 import numpy as np
 import matplotlib.pyplot as plt
