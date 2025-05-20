@@ -55,32 +55,34 @@ def fetch_forecast_data(lat, lon, forecast_hour, height=10):
     )
 
     # cannot get this to work, not too sure why
-    cloud_ds = xr.open_dataset(file_name,
-                               engine='cfgrib',
-                               backend_kwargs={
-                                   'filter_by_keys': {
-                                       'typeOfLevel': 'surface',
-                                       'stepType': 'instant'
-                                   }
-                               })
+    cloud_ds = xr.open_dataset(
+    	file_name,
+    	engine='cfgrib',
+    	backend_kwargs={
+        		'filter_by_keys': {
+              'typeOfLevel': 'atmosphere',
+            	'shortName': 'tcc',
+              'stepType': 'instant'
+        }
+    }
 
     # u, v wind and cloud coverage
     u10 = wind_ds['u10'].sel(latitude=lat, longitude=lon,
                              method="nearest").values
     v10 = wind_ds['v10'].sel(latitude=lat, longitude=lon,
                              method="nearest").values
-    #cloud = cloud_ds['tcc'].sel(latitude=lat, longitude=lon, method="nearest").values
-    #^ will be fixed when the cloud_ds is fixed
+    cloud = cloud_ds['tcc'].sel(latitude=lat, longitude=lon, method="nearest").values
 
     wind_speed = np.sqrt(u10**2 + v10**2)
     wind_speed_km = wind_speed*3.6
     wind_dir_rad = np.arctan2(v10, u10)
     wind_dir_deg = (
         270 - np.degrees(wind_dir_rad)) % 360  # convert to meteorological
+    cloud_cov = cloud/100
 
     os.remove(file_name)  # get rid of file
 
-    return float(wind_speed), float(wind_dir_deg)
+    return float(wind_speed), float(wind_dir_deg), float(cloud_cov)
 
 class Environment:
   """
@@ -147,11 +149,11 @@ class Environment:
                 total_neighbors_top = j - neighbors_top
                 total_neighbors_bottom = j + neighbors_bottom
                 tuple_node = tuple(node)
-                wind_speed, wind_dir = 0,0 #fetch_forecast_data(node[0],node[1],6)
+                wind_speed, wind_dir, cloud_cov = 0,0,0 #fetch_forecast_data(node[0],node[1],6)
                 # Uncomment the line above to make the calls
                 self.graph[tuple_node]= {'top': top_node, 'bottom': bottom_node,'forward': \
                     [tuple(arr) for arr in next_column[total_neighbors_top:total_neighbors_bottom + 1]],\
-                        'wind_speed_mps': wind_speed, 'wind_dir_deg': wind_dir}
+                        'wind_speed_mps': wind_speed, 'wind_dir_deg': wind_dir, 'cloud_cov':cloud_cov}
                 print(i,j)
                 print("Done \n")
             bInsert = True
